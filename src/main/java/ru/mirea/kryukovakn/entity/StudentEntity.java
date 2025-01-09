@@ -5,7 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,5 +38,10 @@ public class StudentEntity {
 
     @OneToMany(mappedBy = "pokemonOwner", cascade = CascadeType.ALL, orphanRemoval = false, fetch = FetchType.LAZY)
     private List<CardEntity> cards;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority(role));
+    }
 
 }

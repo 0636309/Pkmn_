@@ -54,20 +54,17 @@ public class CardServiceImpl implements CardService {
         if (studentEntity == null) {
             throw new RuntimeException("Владелец не найден.");
         }
-        String url = pokemonTCG.getCardImageByName(card.getName());
-        card.setImage(url);
+
         Optional<CardEntity> statusCard = cardDao.getCardByNameAndNumber(card.getName(), card.getNumber());
-        CardEntity cardEntity = toEntity(card);
-        if(statusCard.isPresent()){
-            CardEntity statusEntity = statusCard.get();
-            statusEntity.setHp(card.getHp());
-            cardEntity = statusEntity;
+        if (statusCard.isPresent()) {
+            throw new RuntimeException("Карта с таким именем уже существует.");
         }
 
+        CardEntity cardEntity = toEntity(card);
         CardEntity saveCard = cardDao.saveCard(cardEntity);
         return fromEntity(saveCard);
-
     }
+
 
 
 
