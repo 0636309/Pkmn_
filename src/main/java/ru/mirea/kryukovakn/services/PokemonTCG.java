@@ -17,8 +17,8 @@ public class PokemonTCG {
     private final RestTemplate restTemplate;
 
     public String getCardImageByName(String name) throws JsonProcessingException {
-        String POKEMON_TCG_API_URL = "https://api.pokemontcg.io/v2/cards?q=name:" + name;
-        String jsonResponse = restTemplate.getForObject(POKEMON_TCG_API_URL, String.class);
+        String API_URL = "https://api.pokemontcg.io/v2/cards?q=name:" + name;
+        String jsonResponse = restTemplate.getForObject(API_URL, String.class);
         if (jsonResponse == null) {
             return null;
         }
