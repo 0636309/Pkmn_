@@ -1,6 +1,8 @@
 package ru.mirea.kryukovakn.controller;
 
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -52,11 +54,13 @@ public class AuthController {
 
     private final JdbcUserDetailsManager jdbcUserDetailsManager;
 
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) throws CredentialException {
         if (!jdbcUserDetailsManager.userExists(loginRequest.getUsername())) {
-            return ResponseEntity.ok("User should be registered");
+            return ResponseEntity.ok("Пользователь не зарегестрирован.");
         }
         String jwt = loginService.login(loginRequest.getUsername(), loginRequest.getPassword());
         return ResponseEntity.ok(jwt);
@@ -71,6 +75,7 @@ public class AuthController {
     @PostMapping("/success")
     public ResponseEntity<String> success(@AuthenticationPrincipal UserDetails user, HttpServletResponse response) throws IOException {
         log.info("Authentificated user {}", user.getUsername());
+
         String token = jwtTokenService.createToken(user.getUsername(), user.getAuthorities().iterator().next());
         log.info("Create jwt token for user {}", token);
         response.addCookie(new Cookie("jwt", Base64.getEncoder().encodeToString(token.getBytes(StandardCharsets.UTF_8))));
