@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -25,27 +26,30 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity
-                .authorizeHttpRequests(authz ->
-                        authz
-                                .requestMatchers("/api/v1/cards/all", "/api/v1/cards/name/{name}", "/auth/**").permitAll()
-                                .requestMatchers("/api/v1/cards", "/api/v1/students").hasRole("ADMIN")
-                                .anyRequest().authenticated()
-                )
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .csrf(csrf -> csrf.disable())
-
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .successForwardUrl("/success")
-                )
-
-                .userDetailsService(userDetailsService)
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return httpSecurity.build();
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(
+                customizer -> customizer
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/cards/**",
+                                "/api/v1/students/**",
+                                "/api/v1/cards/card/image")
+                        .permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/cards",
+                                "/api/v1/students")
+                        .hasRole("ADMIN")
+                        .requestMatchers("/auth/login", "/auth/register").permitAll()
+                        .requestMatchers("/auth/**").authenticated()
+                        .anyRequest().authenticated()
+        );
+        http.formLogin(form -> form.successForwardUrl("/auth/success"));
+        http.csrf(AbstractHttpConfigurer::disable);
+        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.userDetailsService(userDetailsService);
+        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
     }
 }
 
