@@ -9,41 +9,44 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import ru.mirea.kryukovakn.filter.JwtAuthenticationFilter;
+
+import javax.sql.DataSource;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Autowired
-    private final UserDetailsService jdbcUserDetailsManager;
-
-    @Autowired
     private final JwtAuthenticationFilter jwtFilter;
+    private final UserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.authorizeHttpRequests(
-                customizer ->
-                        customizer
-                                .requestMatchers("/api/v1/cards/all").permitAll()
-                                .requestMatchers("/api/v1/cards/owner").permitAll()
-                                .requestMatchers("/api/v1/cards/name/{name}").permitAll()
-                                .requestMatchers("/auth/**").permitAll()
-                                .requestMatchers("/api/v1/cards").hasRole("ADMIN")
-                                .requestMatchers("/api/v1/students").hasRole("ADMIN")
-                                .requestMatchers("/error**").permitAll()
+        httpSecurity
+                .authorizeHttpRequests(authz ->
+                        authz
+                                .requestMatchers("/api/v1/cards/all", "/api/v1/cards/name/{name}", "/auth/**").permitAll()
+                                .requestMatchers("/api/v1/cards", "/api/v1/students").hasRole("ADMIN")
                                 .anyRequest().authenticated()
-        );
+                )
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(csrf -> csrf.disable())
 
-        httpSecurity.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        httpSecurity.csrf(AbstractHttpConfigurer::disable);
-        httpSecurity.userDetailsService(jdbcUserDetailsManager);
-        httpSecurity.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .successForwardUrl("/success")
+                )
+
+                .userDetailsService(userDetailsService)
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
         return httpSecurity.build();
     }
+}
 
-}}
+

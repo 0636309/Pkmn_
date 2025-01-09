@@ -1,34 +1,43 @@
 package ru.mirea.kryukovakn.controller;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import ru.mirea.kryukovakn.dto.UserDTO;
-import ru.mirea.kryukovakn.services.UserService;
+import ru.mirea.kryukovakn.services.JwtTokenService;
 
-import javax.security.auth.login.CredentialException;
 
-@RestController
-@RequestMapping("/auth")
-@RequiredArgsConstructor
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.Base64;
+
+@Controller
+@RequestMapping("/success")
+@AllArgsConstructor
 public class AuthController {
 
-    @Autowired
-    private final UserService userService;
+    private final JwtTokenService jwtTokenService;
 
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody UserDTO userDTO) throws CredentialException {
-        String jwt = userService.loginUser(userDTO);
-        return ResponseEntity.ok(jwt);
-    }
 
-    @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody UserDTO userDTO) {
-        userService.registerUser(userDTO);
-        return ResponseEntity.ok("Пользователь зарегистрирован");
+    @PostMapping
+    public void handleSuccess(Authentication authentication, HttpServletResponse response) {
+        String username = authentication.getName();
+        var authorities = authentication.getAuthorities();
+
+        String jwt = jwtTokenService.createToken(username, authorities);
+
+        String encodedJwt = Base64.getEncoder().encodeToString(jwt.getBytes());
+
+        Cookie cookie = new Cookie("JWT_TOKEN", encodedJwt);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(3600);
+
+        response.addCookie(cookie);
     }
 }
+

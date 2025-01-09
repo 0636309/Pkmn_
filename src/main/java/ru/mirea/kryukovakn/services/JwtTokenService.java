@@ -13,17 +13,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtTokenService {
-    @Autowired
+
     private final UserDetailsService userDetailsService;
 
     @Value("${token.secret}")
@@ -39,37 +42,36 @@ public class JwtTokenService {
         algorithm = Algorithm.HMAC512(SECRET_KEY);
     }
 
-    public String createToken(String username, GrantedAuthority authority) {
+    public String createToken(String username, Collection<? extends GrantedAuthority> authorities) {
         return JWT.create()
                 .withIssuer("pkmn")
                 .withSubject(username)
-                .withClaim("authorities", List.of(authority.getAuthority()))
+                .withClaim("authorities", authorities.stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList()))
                 .withExpiresAt(LocalDateTime.now().plusMinutes(TOKEN_EXPIRATION_MINUTES).toInstant(ZoneOffset.UTC))
                 .sign(algorithm);
     }
 
-    public DecodedJWT verify(String jwt) {
+    public DecodedJWT verify(String token) {
         try {
-            JWTVerifier verifier = JWT
-                    .require(algorithm)
+            JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer("pkmn")
                     .build();
-
-            DecodedJWT decodedJWT = verifier.verify(jwt);
-
-
-
-            if (Objects.isNull(userDetailsService.loadUserByUsername(decodedJWT.getSubject()))) {
-                log.error("Пользователь не найден");
-                return null;
-            }
-
-            log.info("JWT истекает в {}", decodedJWT.getExpiresAt());
+            DecodedJWT decodedJWT = verifier.verify(token);
             return decodedJWT;
-        }
-        catch (JWTVerificationException e ) {
-            log.error("Ошибка при верификации {}", e.getMessage());
+        } catch (JWTVerificationException e) {
             return null;
         }
     }
+
+    public String extractUsername(String token) {
+        DecodedJWT decodedJWT = verify(token);
+        if (decodedJWT != null) {
+            return decodedJWT.getSubject();
+        }
+        return null;
+    }
+
+
 }
