@@ -31,6 +31,7 @@ import org.springframework.stereotype.Controller;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import ru.mirea.kryukovakn.services.LoginService;
+import ru.mirea.kryukovakn.services.RegistrationService;
 
 import javax.security.auth.login.CredentialException;
 import java.io.IOException;
@@ -47,7 +48,7 @@ public class AuthController {
 
     private final LoginService loginService;
 
-    private final RegistrationController registrationController;
+    private final RegistrationService registrationController;
 
     private final JdbcUserDetailsManager jdbcUserDetailsManager;
 

@@ -31,23 +31,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String token = getJwtFromRequest(request);
+        String token = request.getHeader("Authorization");
 
-        if (token != null) {
-            DecodedJWT decodedJWT = jwtTokenService.verify(token);
-
-            if (decodedJWT != null) {
-                String username = decodedJWT.getSubject();
-                List<String> authorities = decodedJWT.getClaim("authorities").asList(String.class);
-
-                if (userDetailsService.loadUserByUsername(username) != null) {
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username, null, authorities.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList()));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                } else {
-                    log.error("Пользователь с именем {} не найден в базе данных", username);
+        if ((Objects.isNull(token)) || !token.startsWith("Bearer ")) {
+            if (Objects.isNull(request)) {
+                for (Cookie cookie : request.getCookies()) {
+                    if (cookie.getName().equals("jwt"))
+                        token = new String(Base64.getDecoder().decode(cookie.getValue()));
                 }
             }
+
+            if (Objects.isNull(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
+        if (token.startsWith("Bearer ")) {
+            token = token.split("Bearer ")[1];
+            log.info("JWT token: {}", token);
+        }
+
+        DecodedJWT decodedJWT = jwtTokenService.verify(token);
+
+        if (Objects.isNull(decodedJWT)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        log.info("Информация токена: {}", List.of(new SimpleGrantedAuthority(decodedJWT.getClaim("authority").asString())));
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        decodedJWT.getSubject(),
+                        null,
+                        List.of(new SimpleGrantedAuthority(decodedJWT.getClaim("authority").asString()))
+                )
+        );
 
         filterChain.doFilter(request, response);
     }
