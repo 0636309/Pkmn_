@@ -111,7 +111,7 @@ public class CardServiceImpl implements CardService {
                 .name(entity.getName())
                 .hp(entity.getHp())
                 .pokemonType(entity.getPokemon_type())
-                .evolvesFrom(fromEntity(entity.getEvolves_from()))
+                .evolvesFrom(entity.getEvolves_from() != null ? fromEntity(entity.getEvolves_from()) : null)
                 .skills(entity.getSkills())
                 .weaknessType(entity.getWeakness_type())
                 .resistanceType(entity.getResistance_type())
