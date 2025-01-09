@@ -35,7 +35,7 @@ public class CardController {
         return cardService.getCardByOwnerFullName(student.getFirstName(), student.getSurName(), student.getFamilyName());
     }
 
-    // работает???
+    // работает(?)
     @GetMapping("/id/{id}")
     public Card getCardById(@PathVariable UUID id) {
         return cardService.getCardById(id);
