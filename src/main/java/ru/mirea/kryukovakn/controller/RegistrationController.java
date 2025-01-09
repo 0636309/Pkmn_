@@ -11,8 +11,10 @@ import org.springframework.http.ResponseEntity;
 
 
 import ru.mirea.kryukovakn.dto.UserDTO;
+import ru.mirea.kryukovakn.models.LoginRequest;
 
 import java.util.Collections;
+import java.util.List;
 
 @RestController
 public class RegistrationController {
@@ -21,16 +23,16 @@ public class RegistrationController {
 
     private PasswordEncoder passwordEncoder;
 
-    @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody UserDTO userDTO) {
-        String encodedPassword = passwordEncoder.encode(userDTO.getPassword());
 
-        String username = userDTO.getUsername();
-        String role = "ROLE_USER";
+    public ResponseEntity<String> registerUser(LoginRequest request) {
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-        UserDTO newUser = new UserDTO(username, encodedPassword,
-                Collections.singletonList(new SimpleGrantedAuthority(role)));
-
+        UserDTO newUser = UserDTO.builder()
+                .username(request.getUsername())
+                .password(encodedPassword)
+                .authorities(List.of(new SimpleGrantedAuthority("ROLE_USER")))
+                .enabled(true)
+                .build();
         jdbcUserDetailsManager.createUser(newUser);
 
         return ResponseEntity.ok("Успешная регистрация.");

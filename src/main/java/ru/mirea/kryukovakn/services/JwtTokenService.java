@@ -42,13 +42,11 @@ public class JwtTokenService {
         algorithm = Algorithm.HMAC512(SECRET_KEY);
     }
 
-    public String createToken(String username, Collection<? extends GrantedAuthority> authorities) {
+    public String createToken(String username,  GrantedAuthority authority) {
         return JWT.create()
                 .withIssuer("pkmn")
                 .withSubject(username)
-                .withClaim("authorities", authorities.stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.toList()))
+                .withClaim("authorities", authority.getAuthority())
                 .withExpiresAt(LocalDateTime.now().plusMinutes(TOKEN_EXPIRATION_MINUTES).toInstant(ZoneOffset.UTC))
                 .sign(algorithm);
     }
